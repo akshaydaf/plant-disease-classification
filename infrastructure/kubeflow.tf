@@ -24,7 +24,7 @@ resource "kubernetes_service_account" "pipeline_runner" {
 # Helm release for Kubeflow Pipelines
 resource "helm_release" "kubeflow_pipelines" {
   name       = "kubeflow-pipelines"
-  repository = "https://kubernetes-charts.storage.googleapis.com"
+  repository = "https://kubeflow.github.io/manifests"
   chart      = "kubeflow-pipelines"
   namespace  = kubernetes_namespace.kubeflow.metadata[0].name
   version    = var.kubeflow_version
