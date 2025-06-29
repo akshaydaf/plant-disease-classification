@@ -63,7 +63,7 @@ output "nat_gateway_ids" {
 
 output "kubeflow_namespace" {
   description = "Namespace for Kubeflow"
-  value       = kubernetes_namespace.kubeflow.metadata[0].name
+  value       = "kubeflow"
 }
 
 output "monitoring_namespace" {

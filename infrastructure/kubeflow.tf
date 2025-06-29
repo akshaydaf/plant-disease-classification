@@ -1,67 +1,37 @@
-# Create Kubeflow namespace
-resource "kubernetes_namespace" "kubeflow" {
-  metadata {
-    name = "kubeflow"
-    labels = {
-      "app.kubernetes.io/part-of" = "kubeflow"
-    }
+# Deploy Kubeflow using Kustomize with variable substitution
+resource "null_resource" "kubeflow_kustomize" {
+  triggers = {
+    kustomization_hash = filemd5("${path.module}/kubeflow/deploy/kustomization.yaml")
+    s3_bucket          = aws_s3_bucket.kubeflow_pipelines.bucket
+    region             = var.region
+    role_arn           = module.kubeflow_pipelines_irsa.iam_role_arn
   }
-  depends_on = [module.eks]
-}
 
-# Service account for Kubeflow Pipelines
-resource "kubernetes_service_account" "pipeline_runner" {
-  metadata {
-    name      = "pipeline-runner"
-    namespace = kubernetes_namespace.kubeflow.metadata[0].name
-    annotations = {
-      "eks.amazonaws.com/role-arn" = module.kubeflow_pipelines_irsa.iam_role_arn
-    }
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Create temporary directory for processed manifests
+      mkdir -p /tmp/kubeflow-deploy
+      
+      # Copy Kustomize files to temp directory
+      cp -r ${path.module}/kubeflow/deploy/* /tmp/kubeflow-deploy/
+      
+      # Replace placeholders with actual values
+      sed -i.bak 's/PLACEHOLDER_S3_BUCKET_NAME/${aws_s3_bucket.kubeflow_pipelines.bucket}/g' /tmp/kubeflow-deploy/s3-config.yaml
+      sed -i.bak 's/PLACEHOLDER_AWS_REGION/${var.region}/g' /tmp/kubeflow-deploy/s3-config.yaml
+      sed -i.bak 's|\$${PIPELINE_RUNNER_ROLE_ARN}|${module.kubeflow_pipelines_irsa.iam_role_arn}|g' /tmp/kubeflow-deploy/service-account.yaml
+      
+      # Apply the Kustomize configuration
+      kubectl apply -k /tmp/kubeflow-deploy
+      
+      # Clean up
+      rm -rf /tmp/kubeflow-deploy
+    EOT
   }
-  depends_on = [module.eks, kubernetes_namespace.kubeflow]
-}
 
-# Helm release for Kubeflow Pipelines
-resource "helm_release" "kubeflow_pipelines" {
-  name       = "kubeflow-pipelines"
-  repository = "https://kubeflow.github.io/manifests"
-  chart      = "kubeflow-pipelines"
-  namespace  = kubernetes_namespace.kubeflow.metadata[0].name
-  version    = var.kubeflow_version
-  timeout    = 1200
-
-  set = [{
-    name  = "serviceAccountName"
-    value = kubernetes_service_account.pipeline_runner.metadata[0].name
-    },
-    {
-      name  = "minio.enabled"
-      value = "false"
-      }, {
-      name  = "s3.enabled"
-      value = "true"
-      }, {
-      name  = "s3.bucket"
-      value = aws_s3_bucket.kubeflow_pipelines.bucket
-      }, {
-      name  = "s3.region"
-      value = var.region
-      }, {
-      name  = "s3.useSSL"
-      value = "true"
-      }, {
-      name  = "executor.imagePullPolicy"
-      value = "Always"
-    }
-    , {
-      name  = "ui.serviceType"
-      value = "ClusterIP"
-  }]
   depends_on = [
     module.eks,
-    kubernetes_namespace.kubeflow,
-    kubernetes_service_account.pipeline_runner,
     aws_s3_bucket.kubeflow_pipelines,
+    module.kubeflow_pipelines_irsa,
     helm_release.aws_load_balancer_controller
   ]
 }
@@ -162,52 +132,8 @@ resource "helm_release" "cluster_autoscaler" {
   ]
 }
 
-# Ingress for Kubeflow Pipelines UI
-resource "kubernetes_ingress_v1" "kubeflow_pipelines" {
-  metadata {
-    name      = "kubeflow-pipelines-ingress"
-    namespace = kubernetes_namespace.kubeflow.metadata[0].name
-    annotations = {
-      "kubernetes.io/ingress.class"                    = "alb"
-      "alb.ingress.kubernetes.io/scheme"               = "internet-facing"
-      "alb.ingress.kubernetes.io/target-type"          = "ip"
-      "alb.ingress.kubernetes.io/healthcheck-protocol" = "HTTP"
-      "alb.ingress.kubernetes.io/healthcheck-port"     = "traffic-port"
-      "alb.ingress.kubernetes.io/healthcheck-path"     = "/healthz"
-      "alb.ingress.kubernetes.io/listen-ports"         = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
-      "alb.ingress.kubernetes.io/ssl-redirect"         = "443"
-    }
-  }
-
-  spec {
-    rule {
-      http {
-        path {
-          path      = "/*"
-          path_type = "ImplementationSpecific"
-          backend {
-            service {
-              name = "ml-pipeline-ui"
-              port {
-                number = 80
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  depends_on = [
-    module.eks,
-    kubernetes_namespace.kubeflow,
-    helm_release.kubeflow_pipelines,
-    helm_release.aws_load_balancer_controller
-  ]
-}
-
-# Output the Kubeflow Pipelines UI URL
+# Output the Kubeflow Pipelines UI URL (will be available after deployment)
 output "kubeflow_pipelines_url" {
-  description = "URL for Kubeflow Pipelines UI"
-  value       = "http://${kubernetes_ingress_v1.kubeflow_pipelines.status.0.load_balancer.0.ingress.0.hostname}"
+  description = "URL for Kubeflow Pipelines UI - check AWS Load Balancer console for the actual URL after deployment"
+  value       = "Kubeflow Pipelines will be available via the AWS Load Balancer created by the ingress"
 }
