@@ -57,6 +57,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "kubeflow_pipelines" {
   rule {
     id = "cleanup-old-artifacts"
 
+    filter {
+      prefix = ""
+    }
+
     expiration {
       days = 90
     }

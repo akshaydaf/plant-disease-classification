@@ -1,6 +1,6 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -27,29 +27,29 @@ module "eks" {
   # EKS Managed Node Group(s)
   eks_managed_node_groups = {
     main = {
-      name            = var.node_group_name
-      instance_types  = var.node_instance_types
-      min_size        = var.node_min_capacity
-      max_size        = var.node_max_capacity
-      desired_size    = var.node_desired_capacity
-      disk_size       = var.node_disk_size
-      capacity_type   = "ON_DEMAND"
-      subnet_ids      = module.vpc.private_subnets
-      
+      name           = var.node_group_name
+      instance_types = var.node_instance_types
+      min_size       = var.node_min_capacity
+      max_size       = var.node_max_capacity
+      desired_size   = var.node_desired_capacity
+      disk_size      = var.node_disk_size
+      capacity_type  = "ON_DEMAND"
+      subnet_ids     = module.vpc.private_subnets
+
       # Required for Kubeflow
-      ami_type        = "AL2_x86_64"
-      
+      ami_type = "AL2_x86_64"
+
       # Ensure nodes have required permissions
       iam_role_additional_policies = {
         AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
         AmazonS3ReadOnlyAccess   = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
       }
-      
+
       # Add labels for Kubeflow
       labels = {
         "kubeflow/node" = "true"
       }
-      
+
       # Add taints if needed
       # taints = [
       #   {
@@ -60,9 +60,6 @@ module "eks" {
       # ]
     }
   }
-
-  # aws-auth configmap
-  manage_aws_auth_configmap = true
 
   tags = var.tags
 }
@@ -242,15 +239,13 @@ resource "helm_release" "aws_ebs_csi_driver" {
   namespace  = "kube-system"
   version    = "2.23.1"
 
-  set {
+  set = [{
     name  = "controller.serviceAccount.create"
     value = "false"
-  }
-
-  set {
+    }, {
     name  = "controller.serviceAccount.name"
     value = "ebs-csi-controller-sa"
-  }
+  }]
 
   depends_on = [
     module.eks,

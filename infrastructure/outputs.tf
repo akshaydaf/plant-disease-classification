@@ -106,20 +106,9 @@ output "cloudwatch_metrics_role_arn" {
   value       = module.cloudwatch_metrics_irsa.iam_role_arn
 }
 
-# output "github_actions_oidc_provider_arn" {
-#   description = "The ARN of the OIDC Provider for GitHub Actions"
-#   value       = aws_iam_openid_connect_provider.github_actions.arn
-# }
-
-output "github_actions_role_arn" {
-  description = "The ARN of the IAM role for GitHub Actions"
-  value       = aws_iam_role.github_actions.arn
-}
-
-output "kubeconfig" {
-  description = "kubectl config file contents for this EKS cluster"
-  value       = module.eks.kubeconfig
-  sensitive   = true
+output "configure_kubectl" {
+  description = "Configure kubectl: make sure you're logged in with the correct AWS profile and run the following command to update your kubeconfig"
+  value       = "aws eks update-kubeconfig --region ${var.region} --name ${module.eks.cluster_name}"
 }
 
 output "region" {

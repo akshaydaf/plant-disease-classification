@@ -17,50 +17,34 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   version    = "19.6.1"
 
-  set {
+  set = [{
     name  = "server.persistentVolume.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "server.persistentVolume.size"
     value = "20Gi"
-  }
-
-  set {
+    }, {
     name  = "server.retention"
     value = "15d"
-  }
-
-  set {
+    }, {
     name  = "alertmanager.persistentVolume.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "alertmanager.persistentVolume.size"
     value = "10Gi"
-  }
-
-  set {
+    }, {
     name  = "alertmanager.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "nodeExporter.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "pushgateway.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "kubeStateMetrics.enabled"
     value = "true"
-  }
+  }]
 
   depends_on = [
     module.eks,
@@ -77,55 +61,37 @@ resource "helm_release" "grafana" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   version    = "6.56.6"
 
-  set {
+  set = [{
     name  = "persistence.enabled"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "persistence.size"
     value = "10Gi"
-  }
-
-  set {
+    }, {
     name  = "adminPassword"
-    value = "admin"  # In production, use a secret manager or a more secure approach
-  }
-
-  set {
+    value = "admin" # In production, use a secret manager or a more secure approach
+    }, {
     name  = "datasources.datasources\\.yaml.apiVersion"
     value = "1"
-  }
-
-  set {
+    }, {
     name  = "datasources.datasources\\.yaml.datasources[0].name"
     value = "Prometheus"
-  }
-
-  set {
+    }, {
     name  = "datasources.datasources\\.yaml.datasources[0].type"
     value = "prometheus"
-  }
-
-  set {
+    }, {
     name  = "datasources.datasources\\.yaml.datasources[0].url"
     value = "http://prometheus-server.monitoring.svc.cluster.local"
-  }
-
-  set {
+    }, {
     name  = "datasources.datasources\\.yaml.datasources[0].access"
     value = "proxy"
-  }
-
-  set {
+    }, {
     name  = "datasources.datasources\\.yaml.datasources[0].isDefault"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "service.type"
     value = "ClusterIP"
-  }
+  }]
 
   depends_on = [
     module.eks,
@@ -187,20 +153,16 @@ resource "helm_release" "cloudwatch_agent" {
   namespace  = kubernetes_namespace.amazon_cloudwatch.metadata[0].name
   version    = "0.0.9"
 
-  set {
+  set = [{
     name  = "clusterName"
     value = module.eks.cluster_name
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.create"
     value = "false"
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.cloudwatch_agent.metadata[0].name
-  }
+  }]
 
   depends_on = [
     module.eks,

@@ -30,46 +30,33 @@ resource "helm_release" "kubeflow_pipelines" {
   version    = var.kubeflow_version
   timeout    = 1200
 
-  set {
+  set = [{
     name  = "serviceAccountName"
     value = kubernetes_service_account.pipeline_runner.metadata[0].name
-  }
-
-  set {
-    name  = "minio.enabled"
-    value = "false"
-  }
-
-  set {
-    name  = "s3.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "s3.bucket"
-    value = aws_s3_bucket.kubeflow_pipelines.bucket
-  }
-
-  set {
-    name  = "s3.region"
-    value = var.region
-  }
-
-  set {
-    name  = "s3.useSSL"
-    value = "true"
-  }
-
-  set {
-    name  = "executor.imagePullPolicy"
-    value = "Always"
-  }
-
-  set {
-    name  = "ui.serviceType"
-    value = "ClusterIP"
-  }
-
+    },
+    {
+      name  = "minio.enabled"
+      value = "false"
+      }, {
+      name  = "s3.enabled"
+      value = "true"
+      }, {
+      name  = "s3.bucket"
+      value = aws_s3_bucket.kubeflow_pipelines.bucket
+      }, {
+      name  = "s3.region"
+      value = var.region
+      }, {
+      name  = "s3.useSSL"
+      value = "true"
+      }, {
+      name  = "executor.imagePullPolicy"
+      value = "Always"
+    }
+    , {
+      name  = "ui.serviceType"
+      value = "ClusterIP"
+  }]
   depends_on = [
     module.eks,
     kubernetes_namespace.kubeflow,
@@ -87,30 +74,22 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   version    = "1.5.3"
 
-  set {
+  set = [{
     name  = "clusterName"
     value = module.eks.cluster_name
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.create"
     value = "false"
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.aws_load_balancer_controller.metadata[0].name
-  }
-
-  set {
+    }, {
     name  = "region"
     value = var.region
-  }
-
-  set {
+    }, {
     name  = "vpcId"
     value = module.vpc.vpc_id
-  }
+  }]
 
   depends_on = [
     module.eks,
@@ -126,30 +105,22 @@ resource "helm_release" "external_dns" {
   namespace  = "kube-system"
   version    = "6.20.4"
 
-  set {
+  set = [{
     name  = "provider"
     value = "aws"
-  }
-
-  set {
+    }, {
     name  = "aws.region"
     value = var.region
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.create"
     value = "false"
-  }
-
-  set {
+    }, {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.external_dns.metadata[0].name
-  }
-
-  set {
+    }, {
     name  = "policy"
     value = "sync"
-  }
+  }]
 
   depends_on = [
     module.eks,
@@ -165,35 +136,25 @@ resource "helm_release" "cluster_autoscaler" {
   namespace  = "kube-system"
   version    = "9.29.0"
 
-  set {
+  set = [{
     name  = "autoDiscovery.clusterName"
     value = module.eks.cluster_name
-  }
-
-  set {
+    }, {
     name  = "awsRegion"
     value = var.region
-  }
-
-  set {
+    }, {
     name  = "rbac.serviceAccount.create"
     value = "false"
-  }
-
-  set {
+    }, {
     name  = "rbac.serviceAccount.name"
     value = kubernetes_service_account.cluster_autoscaler.metadata[0].name
-  }
-
-  set {
+    }, {
     name  = "extraArgs.balance-similar-node-groups"
     value = "true"
-  }
-
-  set {
+    }, {
     name  = "extraArgs.expander"
     value = "least-waste"
-  }
+  }]
 
   depends_on = [
     module.eks,
