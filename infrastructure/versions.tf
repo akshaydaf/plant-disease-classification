@@ -1,6 +1,13 @@
 terraform {
   required_version = ">= 1.0.0"
 
+  backend "s3" {
+    bucket  = "terraform_state_bucket_plant_disease_classfication"
+    key     = "env/main.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
