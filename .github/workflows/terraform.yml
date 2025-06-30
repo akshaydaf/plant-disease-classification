@@ -80,14 +80,6 @@ jobs:
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
 
-            <details><summary>Show Plan</summary>
-
-            \`\`\`\n
-            ${process.env.PLAN}
-            \`\`\`
-
-            </details>
-
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
 
             github.rest.issues.createComment({
@@ -116,7 +108,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
@@ -129,7 +121,7 @@ jobs:
         run: |
           kubectl get pods -n kubeflow
           kubectl get svc -n kubeflow
-          echo "Kubeflow Pipelines UI is available at: $(kubectl get ingress -n kubeflow kubeflow-pipelines-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+          echo "Kubeflow Pipelines UI is available at: $(kubectl get ingress -n kubeflow kubeflow-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 
       - name: Verify Monitoring
         run: |
