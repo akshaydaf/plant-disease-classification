@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-install-config
+  namespace: kubeflow
+data:
+  # These values will be replaced by Terraform with actual values
+  bucketName: 'PLACEHOLDER_S3_BUCKET_NAME'
+  region: 'PLACEHOLDER_AWS_REGION'
+  # Disable MinIO since we're using S3
+  minioServiceHost: ''
+  minioServicePort: ''
+  # S3 specific settings
+  s3UseHttps: 'true'
+  s3VerifySSL: 'true'
+---
+# Patch the API server to use S3 configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-pipeline-api-server
+  namespace: kubeflow
+spec:
+  template:
+    spec:
+      containers:
+        - name: ml-pipeline-api-server
+          env:
+            - name: OBJECTSTORECONFIG_SECURE
+              value: 'true'
+            - name: OBJECTSTORECONFIG_BUCKETNAME
+              value: 'PLACEHOLDER_S3_BUCKET_NAME'
+            - name: OBJECTSTORECONFIG_REGION
+              value: 'PLACEHOLDER_AWS_REGION'
+            - name: MINIO_SERVICE_SERVICE_HOST
+              value: ''
+            - name: MINIO_SERVICE_SERVICE_PORT
+              value: ''
