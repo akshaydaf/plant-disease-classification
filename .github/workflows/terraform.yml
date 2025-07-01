@@ -88,7 +88,7 @@ jobs:
         run: exit 1
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        # if: github.ref == 'refs/heads/main' && github.event_name == 'push' Remember to add this back in
         run: terraform apply -auto-approve -input=false
 
   kubeflow-deploy:
