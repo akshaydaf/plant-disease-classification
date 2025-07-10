@@ -6,7 +6,11 @@ resource "kubernetes_namespace" "monitoring" {
       "app.kubernetes.io/part-of" = "monitoring"
     }
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # Helm release for Prometheus
