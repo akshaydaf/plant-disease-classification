@@ -21,7 +21,7 @@ permissions:
   pull-requests: write
 
 env:
-  TF_LOG: DEBUG
+  TF_LOG: INFO
   AWS_REGION: us-east-1
 
 jobs:
