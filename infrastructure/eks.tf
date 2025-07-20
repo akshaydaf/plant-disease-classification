@@ -13,6 +13,40 @@ module "eks" {
 
   enable_irsa = true
 
+  # Configure cluster access entries (replaces aws-auth ConfigMap in v20+)
+  enable_cluster_creator_admin_permissions = true
+
+  # Add additional access entries for other users/roles
+  access_entries = {
+    # Example: Add your current AWS role/user here
+    # admin = {
+    #   kubernetes_groups = []
+    #   principal_arn     = "arn:aws:iam::ACCOUNT-ID:role/YOUR-ROLE-NAME"
+    #   policy_associations = {
+    #     admin = {
+    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+    #       access_scope = {
+    #         type = "cluster"
+    #       }
+    #     }
+    #   }
+    # }
+
+    # Uncomment and configure if using GitHub Actions
+    # github_actions = {
+    #   kubernetes_groups = []
+    #   principal_arn     = aws_iam_role.github_actions.arn
+    #   policy_associations = {
+    #     admin = {
+    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+    #       access_scope = {
+    #         type = "cluster"
+    #       }
+    #     }
+    #   }
+    # }
+  }
+
   # Encryption key for secrets
   create_kms_key = true
   cluster_encryption_config = {
