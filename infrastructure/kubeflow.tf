@@ -5,6 +5,10 @@ resource "null_resource" "kubeflow_kustomize" {
     s3_bucket          = aws_s3_bucket.kubeflow_pipelines.bucket
     region             = var.region
     role_arn           = module.kubeflow_pipelines_irsa.iam_role_arn
+    # Force re-run when any kubeflow deploy file changes
+    deploy_files_hash = sha256(join("", [for f in fileset("${path.module}/kubeflow/deploy", "*.yaml") : filesha256("${path.module}/kubeflow/deploy/${f}")]))
+    # Add timestamp to force deployment when infrastructure changes
+    timestamp = timestamp()
   }
 
   provisioner "local-exec" {
