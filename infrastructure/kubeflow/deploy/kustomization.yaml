@@ -5,12 +5,12 @@ kind: Kustomization
 resources:
   - https://github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-multi-user?ref=2.0.5
   - namespace.yaml
-  - service-account.yaml
   - ingress.yaml
 
 # Apply our customizations
 patchesStrategicMerge:
   - s3-config.yaml
+  - service-account.yaml
 
 # Patch the default service account to use our IRSA-enabled one
 patches:
@@ -22,7 +22,7 @@ patches:
         path: /spec/template/spec/serviceAccountName
         value: pipeline-runner
 
-# Images to use (pinned versions for stability)
+# Images to use
 images:
   - name: gcr.io/ml-pipeline/api-server
     newTag: '2.0.5'

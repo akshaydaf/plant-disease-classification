@@ -13,6 +13,13 @@ module "eks" {
 
   enable_irsa = true
 
+  # Configure cluster access entries (replaces aws-auth ConfigMap in v20+)
+  enable_cluster_creator_admin_permissions = true
+
+  # Add additional access entries for other users/roles
+  access_entries = {
+  }
+
   # Encryption key for secrets
   create_kms_key = true
   cluster_encryption_config = {
@@ -229,7 +236,11 @@ resource "kubernetes_service_account" "ebs_csi_controller" {
       "eks.amazonaws.com/role-arn" = module.ebs_csi_irsa.iam_role_arn
     }
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 resource "helm_release" "aws_ebs_csi_driver" {

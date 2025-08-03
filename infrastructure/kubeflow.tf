@@ -5,6 +5,7 @@ resource "null_resource" "kubeflow_kustomize" {
     s3_bucket          = aws_s3_bucket.kubeflow_pipelines.bucket
     region             = var.region
     role_arn           = module.kubeflow_pipelines_irsa.iam_role_arn
+    always_run         = uuid()
   }
 
   provisioner "local-exec" {

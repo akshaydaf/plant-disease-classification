@@ -66,11 +66,6 @@ output "kubeflow_namespace" {
   value       = "kubeflow"
 }
 
-output "monitoring_namespace" {
-  description = "Namespace for monitoring"
-  value       = kubernetes_namespace.monitoring.metadata[0].name
-}
-
 output "s3_bucket_id" {
   description = "The ID of the S3 bucket for Kubeflow Pipelines artifacts"
   value       = aws_s3_bucket.kubeflow_pipelines.id

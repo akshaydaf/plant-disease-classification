@@ -137,7 +137,11 @@ resource "kubernetes_service_account" "aws_load_balancer_controller" {
       "app.kubernetes.io/component" = "controller"
     }
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # Service account for External DNS
@@ -149,7 +153,11 @@ resource "kubernetes_service_account" "external_dns" {
       "eks.amazonaws.com/role-arn" = module.external_dns_irsa.iam_role_arn
     }
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # Service account for Cluster Autoscaler
@@ -165,7 +173,11 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
       "k8s-app"   = "cluster-autoscaler"
     }
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # Service account for CloudWatch Metrics
@@ -173,7 +185,11 @@ resource "kubernetes_namespace" "amazon_cloudwatch" {
   metadata {
     name = "amazon-cloudwatch"
   }
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 resource "kubernetes_service_account" "cloudwatch_agent" {
