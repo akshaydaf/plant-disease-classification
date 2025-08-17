@@ -23,12 +23,12 @@ env:
   AWS_REGION: us-east-1
   CLUSTER_NAME: kubeflow-eks
   KUBEFLOW_NAMESPACE: kubeflow
-  environment: deploy
 
 jobs:
   deploy-pipelines:
     name: 'Deploy Kubeflow Pipelines'
     runs-on: ubuntu-latest
+    environment: deploy
     steps:
       - name: Checkout
         uses: actions/checkout@v3
