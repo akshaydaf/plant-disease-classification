@@ -1,0 +1,93 @@
+name: 'Kubeflow Pipelines Deployment'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pipelines/**'
+      - '.github/workflows/kubeflow-pipelines.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pipelines/**'
+      - '.github/workflows/kubeflow-pipelines.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: kubeflow-eks
+  KUBEFLOW_NAMESPACE: kubeflow
+  environment: deploy
+
+jobs:
+  deploy-pipelines:
+    name: 'Deploy Kubeflow Pipelines'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install kfp kubernetes pytest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Get Kubeflow endpoint
+        id: get-endpoint
+        run: |
+          KUBEFLOW_ENDPOINT=$(kubectl get ingress -n ${{ env.KUBEFLOW_NAMESPACE }} kubeflow-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          if [ -z "$KUBEFLOW_ENDPOINT" ]; then
+            echo "Failed to get Kubeflow endpoint. Check if the ingress is properly configured."
+            exit 1
+          fi
+          echo "KUBEFLOW_ENDPOINT=http://${KUBEFLOW_ENDPOINT}" >> $GITHUB_ENV
+          echo "Kubeflow Pipelines endpoint: http://${KUBEFLOW_ENDPOINT}"
+
+      - name: Validate pipeline definitions
+        run: |
+          echo "Validating pipeline definitions..."
+          pytest pipelines/tests/
+
+      - name: Compile pipelines
+        run: |
+          mkdir -p compiled_pipelines
+          for pipeline_file in pipelines/definitions/*.py; do
+            echo "Compiling pipeline: $pipeline_file"
+            python "$pipeline_file" --compile
+          done
+          echo "Pipeline compilation completed."
+
+      - name: Deploy pipelines
+        run: |
+          echo "Deploying pipelines to Kubeflow at ${{ env.KUBEFLOW_ENDPOINT }}"
+          python pipelines/utils/deploy.py \
+            --endpoint ${{ env.KUBEFLOW_ENDPOINT }} \
+            --compiled-dir compiled_pipelines
+
+      - name: Verify deployments
+        run: |
+          echo "Verifying pipeline deployments..."
+          python pipelines/utils/verify.py \
+            --endpoint ${{ env.KUBEFLOW_ENDPOINT }}
